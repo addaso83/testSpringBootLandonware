@@ -15,9 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.EasyInsurranceBroker.models.entity.Categoria;
 import com.EasyInsurranceBroker.models.entity.Producto;
+import com.EasyInsurranceBroker.models.services.ICategoriaService;
 import com.EasyInsurranceBroker.models.services.IProductoService;
 import com.EasyInsurranceBrokers.dtos.ListaProductosCrud;
+import com.EasyInsurranceBrokers.dtos.ListaCategorias;
+import com.EasyInsurranceBrokers.dtos.ProductoDTO;
 
 import org.springframework.http.HttpStatus;
 
@@ -29,6 +33,23 @@ public class ProductoRestController {
 	
 	@Autowired
 	private IProductoService productoService;
+	
+	@Autowired
+	private ICategoriaService categoriaService;
+	
+	@GetMapping("/categorias")
+	public List<ListaCategorias> findAllCategorias(){
+		List<Categoria> categorias = categoriaService.findAll();
+		List<ListaCategorias> listaCategorias = new ArrayList<ListaCategorias>();
+		
+		for(Categoria el : categorias) {
+			ListaCategorias categoria = new ListaCategorias();
+			categoria.setCategoriaid(el.getCategoriaid());
+			categoria.setNombre(el.getNombre());
+			listaCategorias.add(categoria);
+		}
+		return listaCategorias;
+	}
 
 	@GetMapping("/productosCrud")
 	public List<ListaProductosCrud> findAllProductosCrud(){
@@ -47,7 +68,7 @@ public class ProductoRestController {
 		    	productoCrud.setInventario("En stock");
 		    }
 		    if(el.getCantidad() > 0 && el.getCantidad()<= el.getExistenciaMinima()) {
-		    	productoCrud.setInventario("Baja existencia");
+		    	productoCrud.setInventario("Limitado");
 		    }
 		    if(el.getCantidad() == 0) {
 		    	productoCrud.setInventario("Agotado");
@@ -67,36 +88,51 @@ public class ProductoRestController {
 		return productos;
 	}
 	
-	@GetMapping("/productos/{id}")
-	public Producto findById(@PathVariable int id) {
+	@GetMapping("/productosById/{id}")
+	public ProductoDTO findById(@PathVariable int id) {
 		Producto producto = this.productoService.findProductById(id);
-		return  producto;
+		ProductoDTO productoDTO = new ProductoDTO();
+		productoDTO.setId(producto.getProductoid());
+		productoDTO.setCategoria(producto.getCategoria().getCategoriaid());
+		productoDTO.setCantidad(producto.getCantidad());
+		productoDTO.setPrecio(producto.getPrecio());
+		productoDTO.setExistenciaminima(producto.getExistenciaMinima());
+		productoDTO.setNombre(producto.getNombre());
+		return  productoDTO;
 	}
 
 	@PostMapping("/productos")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Producto saveProducto(@RequestBody Producto producto) {
+	public ProductoDTO saveProducto(@RequestBody ProductoDTO productoDTO) {
+		Producto  producto = new Producto();
+		producto.setCantidad(productoDTO.getCantidad());
+		producto.setExistenciaMinima(productoDTO.getExistenciaminima());
+		producto.setPrecio(productoDTO.getPrecio());
+		Categoria categoria = categoriaService.findById(productoDTO.getCategoria());
+		producto.setCategoria(categoria);
+		producto.setNombre(productoDTO.getNombre());
 		this.productoService.saveProducto(producto);
-		return producto;
+		productoDTO.setId(producto.getProductoid());
+		return productoDTO;
 	}
 
 	@PutMapping("/productos/{id}")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Producto updateProducto(@RequestBody Producto producto, @PathVariable int id) {
+	public ProductoDTO updateProducto(@RequestBody ProductoDTO productoDTO, @PathVariable int id) {
+		Categoria categoria = categoriaService.findById(productoDTO.getCategoria());
 		Producto productoActual = this.productoService.findProductById(id);
-		productoActual.setCantidad(producto.getCantidad());
-		productoActual.setNombre(producto.getNombre());
-		productoActual.setExistenciaMinima(producto.getExistenciaMinima());
-		productoActual.setCategoria(producto.getCategoria());
-		productoActual.setPrecio(producto.getPrecio());
-		productoActual.setImagen(producto.getImagen());
+		productoActual.setCantidad(productoDTO.getCantidad());
+		productoActual.setNombre(productoDTO.getNombre());
+		productoActual.setExistenciaMinima(productoDTO.getExistenciaminima());
+		productoActual.setCategoria(categoria);
+		productoActual.setPrecio(productoDTO.getPrecio());
 	    this.productoService.saveProducto(productoActual);	
-		return productoActual;
+		return productoDTO;
 	}
 
-	@DeleteMapping("/productos/{id}")
+	@DeleteMapping("/productosDelete/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void delete(@PathVariable int id) {
+	public void deleteProducto(@PathVariable int id) {
 		Producto productoActual = this.productoService.findProductById(id);
 		this.productoService.deleteProducto(productoActual);
 	}

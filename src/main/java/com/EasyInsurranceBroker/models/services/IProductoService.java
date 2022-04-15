@@ -3,7 +3,6 @@ package com.EasyInsurranceBroker.models.services;
 import java.util.List;
 
 import com.EasyInsurranceBroker.models.entity.Producto;
-import com.EasyInsurranceBrokers.dtos.ListaProductosCrud;
 
 public interface IProductoService {
 	
